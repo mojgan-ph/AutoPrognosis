@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from pivottablejs import pivot_ui
@@ -118,14 +119,14 @@ class AutoPrognosis_Classifier:
     def __init__(
             self,
             CV=5,
-            num_iter=100,
+            num_iter=3,
             kernel_freq=10,
             ensemble=True,
             ensemble_size=10,
             Gibbs_iter=100,
             burn_in=50,
             num_components=3,
-            is_nan=True,
+            is_nan=False,
             metric='aucroc',
             acquisition_type='LCB',
             **kwargs):
@@ -149,20 +150,43 @@ class AutoPrognosis_Classifier:
         self.models_        = []
         self.scores_        = []
         
-        self.model_names    = ['Random Forest', 'Gradient Boosting', 'XGBoost', 'Adaboost', 'Bagging', 'Bernoulli Naive Bayes',
+        self.my_model_indexes= [0,1,2,3,15] #Mojgan: by this, I am filtering the classifiers
+        self.model_names_original    = ['Random Forest', 'Gradient Boosting', 'XGBoost', 'Adaboost', 'Bagging', 'Bernoulli Naive Bayes',
                                'Gauss Naive Bayes', 'Multinomial Naive Bayes', 'Logistic Regression','Perceptron',
-                               'Decision Trees','QDA','LDA','KNN','Linear SVM', 'Neural Network']
+                               'Decision Trees','QDA','LDA','KNN','Linear SVM', 'Neural Network'] 
+
+        self.model_names    = [self.model_names_original[i] for i in self.my_model_indexes] #Mojgan
         
         
         self.initialize_hyperparameter_map()
         self.name = 'autoprognosis_clf'
         self.exe_start_time = time.time()
         
-    def initialize_hyperparameter_map(self):
+    def initialize_hyperparameter_map_original(self):
         self.modind         = [0,1,2,3,4,5,7,8,9,10,13,14,15] # indexes of models with hyperparam
         self.noHyp          = [6,11,12]                       # indexes of models without hyperparam
         self.hypMAP         = [[1,2],[3,4,5],[6,7,8],[9,10],[11,12,13,14],[15],[],[16],
                                [17,18,19],[20,21],[22],[],[],[23,24,25,26],[27],[28,29,30,31]]
+
+    def initialize_hyperparameter_map(self): 
+        self.model_parameter_number= [2,3,3,2,4,1,0,1,3,2,1,0,0,4,1,4] #Mojgan : this is for all 16 models.
+        #modind and noHyp and hupMAP will work with internal indexes, that is 0 to 4, if only 4 classifies are to be studied
+        #0 to 15 is only used in my_model_indexes, that comes from the user, and is used in the constructor, 
+        # and in get_model. We translate mdl_index there before use.
+        param_count=1
+        model_count=0
+        self.modind=[]
+        self.noHyp=[]
+        self.hypMAP=[]
+        for i in self.my_model_indexes:
+            if self.model_parameter_number[i]>0:
+                self.modind.append(model_count)
+                self.hypMAP.append(list(range(param_count, param_count+self.model_parameter_number[i])))
+                param_count+=self.model_parameter_number[i]
+            else: 
+                self.noHyp.append(model_count)
+            model_count+=1
+        self.set_base_models()
         
     def get_model(self,dom_,comp_no,comp_map,x_next):
         
@@ -191,11 +215,15 @@ class AutoPrognosis_Classifier:
             preprocessors_.append([GaussianTransform()])
             preprocessors_.append([FeatureNormalizer()])
 
-            
+#        if(self.use_imputer==False):
+#            imputers_ = [[]]
+#        if(self.use_preprocessor==False):
+#            preprocessors_ = [[]]
+        
         select_imp = np.random.randint(
             1 if self.is_nan else 0,
-            len(imputers_)-1)
-        select_pre = np.random.randint(0, len(preprocessors_)-1)        
+            len(imputers_)) #Mojgan: was len(imputers_)-1, I changed it
+        select_pre = np.random.randint(0, len(preprocessors_))       #Mojgan: same here  
         
         # Create hyper-parameter dictionary
         #----------------------------------
@@ -216,7 +244,7 @@ class AutoPrognosis_Classifier:
         domain_list = [dom_[k]['name'] for k in range(len(dom_))]
         pivot_ = domain_list.index('classifier')
         mdl_index = comp_map[comp_no][int(x_next[pivot_])]
-
+        mdl_index= self.my_model_indexes[mdl_index]
         # Create a list of model instantiations
         #--------------------------------------
         if mdl_index==0:
@@ -315,20 +343,53 @@ class AutoPrognosis_Classifier:
         model = basePipeline(model_list=model_list)
         return model
     
-    
+    def set_base_models(self):
+        # Define domains for classifier sets
+        self.base_models_=[]
+        for mdl_index in self.my_model_indexes:
+            if mdl_index==0:
+                self.base_models_.append(RandomForest())
+            elif mdl_index==1:
+                self.base_models_.append(GradientBoosting())
+            elif mdl_index==2:
+                self.base_models_.append(XGboost())
+            elif mdl_index==3:
+                self.base_models_.append(Adaboost())
+            elif mdl_index==4:
+                self.base_models_.append(Bagging())
+            elif mdl_index==5:
+                self.base_models_.append(BernNaiveBayes())
+            elif mdl_index==6:
+                self.base_models_.append(GaussNaiveBayes())
+            elif mdl_index==7:
+                self.base_models_.append(MultinomialNaiveBayes())
+            elif mdl_index==8:
+                self.base_models_.append(LogisticReg())
+            elif mdl_index==9:
+                self.base_models_.append(Percept())
+            elif mdl_index==10:
+                self.base_models_.append(DecisionTrees())
+            elif mdl_index==11:
+                self.base_models_.append(QDA_())
+            elif mdl_index==12:
+                self.base_models_.append(LDA_())
+            elif mdl_index==13:
+                self.base_models_.append(KNN())
+            elif mdl_index==14:
+                self.base_models_.append(LinearSVM())
+            elif mdl_index==15:
+                self.base_models_.append(NeuralNet())
+       
+
+
     def get_opt_domain(self):
 
         assert 0
         
-        # Define domains for classifier sets
-        base_models_ = [RandomForest(),GradientBoosting(),XGboost(),Adaboost(),Bagging(),BernNaiveBayes(),
-                        GaussNaiveBayes(),MultinomialNaiveBayes(),LogisticReg(),Percept(),DecisionTrees(),
-                        QDA_(),LDA_(),KNN(),LinearSVM(),NeuralNet()]
-        
         domain_      = [{'name': 'classifier', 'type': 'categorical', 
-                         'domain': (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15),'dimensionality': 1}]
+                         'domain': tuple(range(0,len(self.my_model_indexes))),'dimensionality': 1}]
         
-        for bmodel_ in base_models_:
+        for bmodel_ in self.base_models_:
             domain_  = domain_ + bmodel_.get_hyperparameter_space()
 
         dim_         = len(domain_)
@@ -349,7 +410,7 @@ class AutoPrognosis_Classifier:
   
     #----------------------
     
-    def load_initial_model(self):
+    def load_initial_model_original(self):
         # [RF 0 (1,2),GBM 1 (3,4,5),XGB 2 (6,7,8),Ada 3 (9,10),Bag 4 (11,12,13,14), BNB 5 (15), 
         # GNB 6 [], MNB 7 (16), LR 8 (17,18,19), Perc 9 (20,21), DT 10 (22), QDA_ 11 (),
         # LDA_ 12 (), KNN 13 (23,24,25,26), LSVM 14 (27), NN 15 (28,29,30,31)]
@@ -362,6 +423,21 @@ class AutoPrognosis_Classifier:
         X_inits      = [np.array([[1,100,6,0.1,100,6,0.1,100,0,2,100,0,0]]),
                         np.array([[0,1,1,100,1,1,0,100,1]]),
                         np.array([[0,1,0,0,0,30,0,1,0,1,0,100]])]
+        
+        return X_inits, init_assigns  
+
+    def load_initial_model(self): #Mojgan: for now, this is hardcoded. 
+        # [RF 0 (1,2),GBM 1 (3,4,5),XGB 2 (6,7,8),Ada 3 (9,10),Bag 4 (11,12,13,14), BNB 5 (15), 
+        # GNB 6 [], MNB 7 (16), LR 8 (17,18,19), Perc 9 (20,21), DT 10 (22), QDA_ 11 (),
+        # LDA_ 12 (), KNN 13 (23,24,25,26), LSVM 14 (27), NN 15 (28,29,30,31)]
+        
+        init_assigns = [[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],
+                        [0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],
+                        [0,0,1],[0,0,1],[0,0,1],[0,0,1]]
+        
+        X_inits      = [np.array([[0, 100, 3, 0.1]]),
+                        np.array([[0, 100, 1]]), 
+                        np.array([[2,1, 100,0,1, 100,3,0.1, 100,1 ]])]     
         
         return X_inits, init_assigns  
     
@@ -425,13 +501,14 @@ class AutoPrognosis_Classifier:
         # Initial decomposition and hyper-parameters
         # -------------------------------------------
         X_inits, self._assigns          = self.load_initial_model()
-        domains_, dummy_, self.compons_ = get_clustered_domains(self.modind,self.hypMAP,self.noHyp,self._assigns)
+        domains_, dummy_, self.compons_ = get_clustered_domains(self.modind,self.hypMAP,self.noHyp,self._assigns, self.base_models_)
         self.domains_                   = domains_
 
         # -------------------------------------------
         # Obtain initial BO objective
         # -------------------------------------------
-        Y_inits      = [np.array([self.evaluate_CV_objective(X.copy(), Y.copy(), self.get_model(domains_[k],k,self.compons_,X_inits[k][0]))[0]]).reshape((1,1)) for k in range(len(X_inits))] 
+        Y_inits      = [np.array([self.evaluate_CV_objective(X.copy(), Y.copy(), self.get_model(
+                                                                domains_[k],k,self.compons_,X_inits[k][0]))[0]]).reshape((1,1)) for k in range(len(X_inits))] 
         
         X_step       = X_inits
         Y_step       = Y_inits
@@ -497,7 +574,7 @@ class AutoPrognosis_Classifier:
                 Decomposed_kern, Gposter_                         = self.Kernel_decomposition([self.X_merged], [self.Y_merged], [self.merged_domain_])            
                 self.Gposter_                                     = Gposter_
                 self.kernel_merged_domain_                        = self.merged_domain_
-                self.domains_ , dummy_dims, self.compons_         = get_clustered_domains(self.modind, self.hypMAP, self.noHyp, Gposter_)
+                self.domains_ , dummy_dims, self.compons_         = get_clustered_domains(self.modind, self.hypMAP, self.noHyp, Gposter_, self.base_models_)
                 X_step, Y_step                                    = split_domain(self.domains_, self.merged_domain_, self.compons_, self.X_merged, self.Y_merged)
                 self.X_step  = X_step
                 self.Y_step  = Y_step
@@ -1010,8 +1087,8 @@ def evaluate_ens(X, Y, model_input, n_folds, visualize=False):
     
     logger.info('+evaluate_ens shape x:{} y:{}'.format(X.shape, Y.shape))
     logger.info('nan x:{} {}'.format(
-        sum(np.ravel(np.isnan(X))),
-        sum(np.ravel(np.isnan(X)))/len(np.ravel(X))))
+        sum(np.ravel(pd.isnull(X))), #Mojgan: It was np.isnan, I changed it
+        sum(np.ravel(pd.isnull(X)))/len(np.ravel(X)))) # same here
 
     metric_      = np.zeros(n_folds)
     metric_ens   = np.zeros(n_folds)
@@ -1110,14 +1187,14 @@ def get_GPy_logLikelhood(dataX,dataY,Kernel_in):
 
 # In[144]:
 
-def get_clustered_domains(modind,hypMAP,noHyp,assigns):
+def get_clustered_domains(modind,hypMAP,noHyp,assigns, base_models_):
         
     # Define domains for classifier sets
     #[RF 0 (1,2),GBM 1 (3,4,5),XGB 2 (6,7,8),Ada 3 (9,10),Bag 4 (11,12,13,14), BNB 5 (15), 
     # GNB 6 [], MNB 7 (16), LR 8 (17,18,19), Perc 9 (20,21), DT 10 (22), QDA_ 11 (),
     # LDA_ 12 (), KNN 13 (23,24,25,26), LSVM 14 (27), NN 15 (28,29,30,31)]
     
-    GibbScores_  = [np.mean(np.array([assigns[hypMAP[modind[m]][k]-1] for k in range(len(hypMAP[modind[m]]))]),axis=0) for m in range(len(modind))]
+    GibbScores_  = [np.mean(np.array([assigns[hypMAP[m][k]-1] for k in range(len(hypMAP[m]))]),axis=0) for m in range(len(modind))]
     num_clusters = len(assigns[0])
     chunk_size   = int(np.floor(len(modind)/num_clusters))
     
@@ -1143,11 +1220,7 @@ def get_clustered_domains(modind,hypMAP,noHyp,assigns):
             
     model_indexes     = [[modind[model_indxs[nn][kk]] for kk in range(len(model_indxs[nn]))] for nn in range(len(model_indxs))]       
     model_indexes[-1] = model_indexes[-1] + noHyp
-    
-    base_models_      = [RandomForest(),GradientBoosting(),XGboost(),Adaboost(),Bagging(),BernNaiveBayes(),
-                         GaussNaiveBayes(),MultinomialNaiveBayes(),LogisticReg(),Percept(),DecisionTrees(),
-                         QDA_(),LDA_(),KNN(),LinearSVM(),NeuralNet()]
-    
+     
     component_maps     = [model_indexes[k] for k in range(num_clusters)]
     domains_           = [[{'name': 'classifier', 'type': 'categorical', 'domain': tuple(range(len(model_indexes[k]))),'dimensionality': 1}] for k in range(num_clusters)]
             
