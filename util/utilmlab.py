@@ -164,7 +164,7 @@ def df_one_hot_to_cat(df_one_hot, prop_one_hot_col, labels=None):
 
 
 def df_get_num_na(df):
-    return int(sum(np.ravel(np.isnan(df))))
+    return int(sum(np.ravel(pd.isnull(df)))) #mojgan: was np.isnan, I changed it
 
 
 def introduce_missing(data, p_miss):
