@@ -1,1 +1,5 @@
 alg/autoprognosis/.vscode
+__pycache__
+alg/autoprognosis/log_ap.txt
+alg/autoprognosis/sinkr.txt
+alg/autoprognosis/.ipynb_checkpoints/tutorial_autoprognosis_api-checkpoint.ipynb
