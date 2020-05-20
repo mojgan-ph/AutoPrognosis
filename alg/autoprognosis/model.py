@@ -119,16 +119,19 @@ class AutoPrognosis_Classifier:
     def __init__(
             self,
             CV=5,
-            num_iter=3,
-            kernel_freq=10,
+            num_iter=100, # this looks like the total number of iterations for the optimization process
+            kernel_freq=100, # this is the frequency at which the kernel might get updated. If num_iter and this one are both 100, 
+                            # that means the kernel does not update
             ensemble=True,
-            ensemble_size=10,
-            Gibbs_iter=100,
-            burn_in=50,
-            num_components=3,
-            is_nan=False,
+            ensemble_size=3, #Mojgan: was 10, I made it 3, as is in autoprognosis.py file
+            Gibbs_iter=100, # each time the kernel is being updated, something loops this many times!!  #?????????
+            burn_in=50, # Maybe it is the maximum number of parameters in a cluster(or component)
+            num_components=3, # looks like it is the number of clusters that are optimised independently
+            is_nan=False, 
             metric='aucroc',
             acquisition_type='LCB',
+            #num_clusters=3, #Mojgan: I added this! but it looks like the same as num_components
+            my_model_indexes= [0,1,2,3], #Mojgan: by this, I am filtering the classifiers
             **kwargs):
 
         eva.set_metric(metric)
@@ -145,12 +148,13 @@ class AutoPrognosis_Classifier:
         self.kernel_freq    = kernel_freq 
         self.ensemble_size  = ensemble_size
         self.ensemble       = ensemble
-
+        #self.num_clusters   = num_clusters #Mojgan
+        
         self.model_         = []
         self.models_        = []
         self.scores_        = []
         
-        self.my_model_indexes= [0,1,2,3,15] #Mojgan: by this, I am filtering the classifiers
+        self.my_model_indexes= my_model_indexes #Mojgan
         self.model_names_original    = ['Random Forest', 'Gradient Boosting', 'XGBoost', 'Adaboost', 'Bagging', 'Bernoulli Naive Bayes',
                                'Gauss Naive Bayes', 'Multinomial Naive Bayes', 'Logistic Regression','Perceptron',
                                'Decision Trees','QDA','LDA','KNN','Linear SVM', 'Neural Network'] 
@@ -215,11 +219,6 @@ class AutoPrognosis_Classifier:
             preprocessors_.append([GaussianTransform()])
             preprocessors_.append([FeatureNormalizer()])
 
-#        if(self.use_imputer==False):
-#            imputers_ = [[]]
-#        if(self.use_preprocessor==False):
-#            preprocessors_ = [[]]
-        
         select_imp = np.random.randint(
             1 if self.is_nan else 0,
             len(imputers_)) #Mojgan: was len(imputers_)-1, I changed it
@@ -426,19 +425,34 @@ class AutoPrognosis_Classifier:
         
         return X_inits, init_assigns  
 
-    def load_initial_model(self): #Mojgan: for now, this is hardcoded. 
-        # [RF 0 (1,2),GBM 1 (3,4,5),XGB 2 (6,7,8),Ada 3 (9,10),Bag 4 (11,12,13,14), BNB 5 (15), 
-        # GNB 6 [], MNB 7 (16), LR 8 (17,18,19), Perc 9 (20,21), DT 10 (22), QDA_ 11 (),
-        # LDA_ 12 (), KNN 13 (23,24,25,26), LSVM 14 (27), NN 15 (28,29,30,31)]
+    def load_initial_model(self): #Mojgan: unlike the previous code for this function, init_assigns here is set to initial assign of 
+        # models to clusters, rather than parameters to clusters. internal_clusters_size is the smallest cluster size, and all num_cluster-1 first 
+        # clusters will have this size. Then the parameters will be initialized according to this assignment. 
+        # For each parameter cluster, the first item is the number of classifiers-1 in that cluster. Then the parameters follow.
+        # I guess num_components is the same as num_clusters, so I replaced them all with num_components
+
+        internal_cluster_size= int(len(self.base_models_)/self.num_components)
+        init_assigns = [[0 for k in range(self.num_components)] for i in range(len(self.base_models_))]
         
-        init_assigns = [[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],
-                        [0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],
-                        [0,0,1],[0,0,1],[0,0,1],[0,0,1]]
-        
-        X_inits      = [np.array([[0, 100, 3, 0.1]]),
-                        np.array([[0, 100, 1]]), 
-                        np.array([[2,1, 100,0,1, 100,3,0.1, 100,1 ]])]     
-        
+        for i in range(len(self.base_models_)):
+            for j in range(self.num_components):
+                if(internal_cluster_size*j<=i and ((j==(self.num_components-1)) or (i<internal_cluster_size*(j+1)))):
+                    init_assigns[i][j]=1
+
+        X_inits= [[internal_cluster_size-1] for i in range(self.num_components-1)]     
+        X_inits.append([len(self.base_models_)- (self.num_components-1)*internal_cluster_size -1])
+
+        for model in range(len(self.base_models_)-1, -1, -1):
+            cluster_number= np.argmax(init_assigns[model])
+            for space in self.base_models_[model].get_hyperparameter_space():
+                if(space['type']=='discrete' or space['type']=='categorical'):
+                    index_median= int(len(space['domain'])/3)
+                    X_inits[cluster_number].append(space['domain'][index_median])
+                else:
+                    first_value= space['domain'][0]
+                    last_value= space['domain'][len(space['domain'])-1]
+                    X_inits[cluster_number].append((first_value+(last_value- first_value)/3))
+        X_inits= [np.array([X_inits[i]]) for i in range(len(X_inits))]
         return X_inits, init_assigns  
     
     def BO_(self,domains_,X_step,Y_step):
@@ -463,7 +477,6 @@ class AutoPrognosis_Classifier:
                 model_type='GP', exact_feval=True,
                 cost_withGradients=None
             ))
-
             x_next.append(bo_steps[-1].suggest_next_locations()[0])
             GP_.append(bo_steps[-1].model.model)
 
@@ -501,7 +514,7 @@ class AutoPrognosis_Classifier:
         # Initial decomposition and hyper-parameters
         # -------------------------------------------
         X_inits, self._assigns          = self.load_initial_model()
-        domains_, dummy_, self.compons_ = get_clustered_domains(self.modind,self.hypMAP,self.noHyp,self._assigns, self.base_models_)
+        domains_, dummy_, self.compons_ = get_clustered_domains(self.modind,self.hypMAP,self.noHyp,self._assigns, self.base_models_,  self.num_components, 0)
         self.domains_                   = domains_
 
         # -------------------------------------------
@@ -574,7 +587,7 @@ class AutoPrognosis_Classifier:
                 Decomposed_kern, Gposter_                         = self.Kernel_decomposition([self.X_merged], [self.Y_merged], [self.merged_domain_])            
                 self.Gposter_                                     = Gposter_
                 self.kernel_merged_domain_                        = self.merged_domain_
-                self.domains_ , dummy_dims, self.compons_         = get_clustered_domains(self.modind, self.hypMAP, self.noHyp, Gposter_, self.base_models_)
+                self.domains_ , dummy_dims, self.compons_         = get_clustered_domains(self.modind, self.hypMAP, self.noHyp, Gposter_, self.base_models_, self.num_components, 1)
                 X_step, Y_step                                    = split_domain(self.domains_, self.merged_domain_, self.compons_, self.X_merged, self.Y_merged)
                 self.X_step  = X_step
                 self.Y_step  = Y_step
@@ -1187,15 +1200,17 @@ def get_GPy_logLikelhood(dataX,dataY,Kernel_in):
 
 # In[144]:
 
-def get_clustered_domains(modind,hypMAP,noHyp,assigns, base_models_):
+def get_clustered_domains(modind,hypMAP,noHyp,assigns, base_models_, num_clusters, for_update_kernel):
         
     # Define domains for classifier sets
     #[RF 0 (1,2),GBM 1 (3,4,5),XGB 2 (6,7,8),Ada 3 (9,10),Bag 4 (11,12,13,14), BNB 5 (15), 
     # GNB 6 [], MNB 7 (16), LR 8 (17,18,19), Perc 9 (20,21), DT 10 (22), QDA_ 11 (),
     # LDA_ 12 (), KNN 13 (23,24,25,26), LSVM 14 (27), NN 15 (28,29,30,31)]
     
-    GibbScores_  = [np.mean(np.array([assigns[hypMAP[m][k]-1] for k in range(len(hypMAP[m]))]),axis=0) for m in range(len(modind))]
-    num_clusters = len(assigns[0])
+    if(for_update_kernel):
+        GibbScores_  = [np.mean(np.array([assigns[hypMAP[m][k]-1] for k in range(len(hypMAP[m]))]),axis=0) for m in range(len(modind))]
+    else:
+        GibbScores_  = assigns
     chunk_size   = int(np.floor(len(modind)/num_clusters))
     
     model_indxs  = [[]]*num_clusters

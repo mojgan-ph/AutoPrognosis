@@ -18,7 +18,7 @@ def init_arg():
         "-n",
         default=0,
         type=int,
-        help="maximum number of samples")
+        help="maximum number of samples") #Mojgan: if other than 0, X_ and Y_ will be truncated at this number !
     parser.add_argument(
         "--nstage",
         default=1,
@@ -43,24 +43,24 @@ def init_arg():
         "--pmiss",
         default=0,
         type=float,
-        help='missing rate when introducing nans')
+        help='missing rate when introducing nans')   #?????????
     parser.add_argument(
         "--xtr",
         default=0,
         type=int,
-        help="private/adhoc/not supported parameter to"
+        help="private/adhoc/not supported parameter to" #?????????
         " temporally control internal behavior")
-    parser.add_argument("--usegain", default=0, type=int)
+    parser.add_argument("--usegain", default=0, type=int) #?????????
     parser.add_argument(
         "--it",
-        default=20,
+        default=100,
         type=int,
-        help='number of iterations')
+        help='number of iterations') 
     parser.add_argument(
         "--ensemble",
         default=1,
         type=int,
-        help='include ensembles when fitting')
+        help='include ensembles when fitting') 
     parser.add_argument("--ensemblesize", default=3, type=int)
     parser.add_argument("--model", help="filename to save model")
     parser.add_argument(
@@ -72,6 +72,12 @@ def init_arg():
         "--acquisitiontype",
         default='LCB',
         help="[LCB, MPI, EI], LCB is prefered but generates warnings")
+    parser.add_argument(
+        "--modelindexes",
+        default='[0,1,2,3]',
+        help="1 Random Forest, 2 Gradient Boosting, 3 XGBoost, 4 Adaboost, 5 Bagging, 6 Bernoulli Naive Bayes, "
+                "7 Gauss Naive Bayes, 8 Multinomial Naive Bayes, 9 Logistic Regression, 10 Perceptron, 11 Decision Trees, "
+                "12 QDA, 13 LDA, 14 KNN, 15 Linear SVM, 16 Neural Network")
     return parser.parse_args()
 
 

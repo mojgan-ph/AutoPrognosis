@@ -100,7 +100,7 @@ class RandomForest(baseClassifier):
     
     def get_hyperparameter_space(self):
         
-        hyp_   = [{'name': 'RandomForest.ntrees', 'type': 'discrete', 'domain': tuple(range(10,1000)),'dimensionality': 1},
+        hyp_   = [{'name': 'RandomForest.ntrees', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000),'dimensionality': 1},
                   {'name': 'RandomForest.criterion', 'type': 'categorical', 'domain': (0,1),'dimensionality': 1}]
 
         return hyp_   
@@ -147,7 +147,7 @@ class GradientBoosting(baseClassifier):
     
     def get_hyperparameter_space(self):
         
-        hyp_ = [{'name': 'GradientBoosting.n_estimators', 'type': 'discrete', 'domain': tuple(range(10,500)),'dimensionality': 1},
+        hyp_ = [{'name': 'GradientBoosting.n_estimators', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500),'dimensionality': 1},
                 {'name': 'GradientBoosting.max_depth', 'type': 'discrete', 'domain': tuple(range(1,10)),'dimensionality': 1},
                 {'name': 'GradientBoosting.learning_rate', 'type': 'continuous', 'domain': (0.005,0.5),'dimensionality': 1}]
         return hyp_   
@@ -192,7 +192,7 @@ class XGboost(baseClassifier):
     
     def get_hyperparameter_space(self):
         
-        hyp_ = [{'name': 'XGboost.n_estimators', 'type': 'discrete', 'domain': tuple(range(10,500)),'dimensionality': 1},
+        hyp_ = [{'name': 'XGboost.n_estimators', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500),'dimensionality': 1},
                 {'name': 'XGboost.max_depth', 'type': 'discrete', 'domain': tuple(range(1,10)),'dimensionality': 1},
                 {'name': 'XGboost.learning_rate', 'type': 'continuous', 'domain': (0.005,0.5),'dimensionality': 1}]
         return hyp_   
@@ -234,7 +234,7 @@ class Adaboost(baseClassifier):
     
     def get_hyperparameter_space(self):
         
-        hyp_ = [{'name': 'Adaboost.n_estimators', 'type': 'discrete', 'domain': tuple(range(10,5000)),'dimensionality': 1},
+        hyp_ = [{'name': 'Adaboost.n_estimators', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000),'dimensionality': 1},
                 {'name': 'Adaboost.learning_rate', 'type': 'continuous', 'domain': (0.005,5),'dimensionality': 1}]
         return hyp_
     
@@ -285,7 +285,7 @@ class Bagging(baseClassifier):
     
     def get_hyperparameter_space(self):
         
-        hyp_ = [{'name': 'Bagging.n_estimators', 'type': 'discrete', 'domain': tuple(range(10,5000)),'dimensionality': 1},
+        hyp_ = [{'name': 'Bagging.n_estimators', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000),'dimensionality': 1},
                 # {'name': 'Bagging.max_samples', 'type': 'continuous', 'domain': (0.005,1),'dimensionality': 1},
                 {'name': 'Bagging.max_samples', 'type': 'continuous', 'domain': (0.01,1),'dimensionality': 1},
                 {'name': 'Bagging.max_features', 'type': 'continuous', 'domain': (0.005,1),'dimensionality': 1},
@@ -438,7 +438,7 @@ class LogisticReg(baseClassifier):
         
         hyp_ = [{'name': 'LogisticRegression.C', 'type': 'continuous', 'domain': (0.005,10),'dimensionality': 1},
                 {'name': 'LogisticRegression.solver', 'type': 'categorical', 'domain': (0,1,2,3,4),'dimensionality': 1},
-                {'name': 'LogisticRegression.max_iter', 'type': 'discrete', 'domain': (0,500),'dimensionality': 1}]
+                {'name': 'LogisticRegression.max_iter', 'type': 'discrete', 'domain': (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500),'dimensionality': 1}]
         
         return hyp_ 
 
