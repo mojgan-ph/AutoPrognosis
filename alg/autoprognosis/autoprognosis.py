@@ -74,10 +74,17 @@ def init_arg():
         help="[LCB, MPI, EI], LCB is prefered but generates warnings")
     parser.add_argument(
         "--modelindexes",
-        default='[0,1,2,3]',
+        nargs="*", 
+        type=int,
+        default=[0,1,2,3,15],
         help="1 Random Forest, 2 Gradient Boosting, 3 XGBoost, 4 Adaboost, 5 Bagging, 6 Bernoulli Naive Bayes, "
                 "7 Gauss Naive Bayes, 8 Multinomial Naive Bayes, 9 Logistic Regression, 10 Perceptron, 11 Decision Trees, "
                 "12 QDA, 13 LDA, 14 KNN, 15 Linear SVM, 16 Neural Network")
+    parser.add_argument(
+        "--num_components",
+        type=int,
+        default=3,
+        help="number of components of the kernel structure")
     return parser.parse_args()
 
 
@@ -112,6 +119,8 @@ if __name__ == '__main__':
     fn_report_json = '{}/report.json'.format(odir)
     fn_model = args.model
     acquisition_type = args.acquisitiontype
+    my_model_indexes= args.modelindexes
+    num_components= args.num_components 
 
     sep = args.separator
     verbose = args.verbose
@@ -216,10 +225,11 @@ if __name__ == '__main__':
         ensemble_size=ensemble_size,
         Gibbs_iter=100,
         burn_in=50,
-        num_components=3,
+        num_components=num_components,
         metric=metric,
         isnan=True if utilmlab.df_get_num_na(X_) else False,
-        acquisition_type=acquisition_type)
+        acquisition_type=acquisition_type,
+        my_model_indexes=my_model_indexes)
 
     if False:
         logger.info('+ap:evaluate_clf')

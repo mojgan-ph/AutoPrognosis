@@ -123,15 +123,14 @@ class AutoPrognosis_Classifier:
             kernel_freq=100, # this is the frequency at which the kernel might get updated. If num_iter and this one are both 100, 
                             # that means the kernel does not update
             ensemble=True,
-            ensemble_size=3, #Mojgan: was 10, I made it 3, as is in autoprognosis.py file
+            ensemble_size=3, 
             Gibbs_iter=100, # each time the kernel is being updated, something loops this many times!!  #?????????
             burn_in=50, # Maybe it is the maximum number of parameters in a cluster(or component)
             num_components=3, # looks like it is the number of clusters that are optimised independently
             is_nan=False, 
             metric='aucroc',
             acquisition_type='LCB',
-            #num_clusters=3, #Mojgan: I added this! but it looks like the same as num_components
-            my_model_indexes= [0,1,2,3], #Mojgan: by this, I am filtering the classifiers
+            my_model_indexes= [0,1,2,3,15], # using this the user can select the classifiers that they are interested in trying
             **kwargs):
 
         eva.set_metric(metric)
