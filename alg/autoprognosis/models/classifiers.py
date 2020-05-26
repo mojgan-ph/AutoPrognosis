@@ -78,15 +78,20 @@ class RandomForest(baseClassifier):
     
     def __init__(self,
                  n_estimators=100,
-                 criterion='gini'):
+                 criterion='gini',
+                 min_samples_leaf=5,
+                 max_features=0.5):
         
         super().__init__()
    
         self.n_estimators  = n_estimators
         self.criterion     = criterion
+        self.min_samples_leaf= min_samples_leaf
+        self.max_features  = max_features
         self.name          = 'Random Forest'
         self.is_pred_proba = True
-        self.model         = RandomForestClassifier(n_estimators=self.n_estimators,criterion=self.criterion)
+        self.model         = RandomForestClassifier(n_estimators=self.n_estimators,criterion=self.criterion,
+         min_samples_leaf= self.min_samples_leaf, max_features=self.max_features)
         
         self.explained     = "*Random forests or random decision forests are an ensemble learning method for classification, regression and other tasks, that operate by constructing a multitude of decision trees at training time and outputting the class that is the mode of the classes (classification) or mean prediction (regression) of the individual trees.*"
         self.image_name    = "RanForest.png"
@@ -96,12 +101,16 @@ class RandomForest(baseClassifier):
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # ((n_estimators)) : integer, positive, default: 100
         # ((criterion))    : “gini” | “entropy” 
+        # ((min_samples_leaf)) : integer, positive, default: 5
+        # ((max_features))    :  “log2” |"sqrt" | 0.8 | 0.5 |None
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
     def get_hyperparameter_space(self):
         
-        hyp_   = [{'name': 'RandomForest.ntrees', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000),'dimensionality': 1},
-                  {'name': 'RandomForest.criterion', 'type': 'categorical', 'domain': (0,1),'dimensionality': 1}]
+        hyp_   = [{'name': 'RandomForest.ntrees', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300,),'dimensionality': 1},
+                  {'name': 'RandomForest.criterion', 'type': 'categorical', 'domain': (0,1),'dimensionality': 1},
+                  {'name': 'RandomForest.min_samples_leaf', 'type': 'discrete', 'domain': (1,3,5,10,15,20,25,30,50,100),'dimensionality': 1},
+                  {'name': 'RandomForest.max_features', 'type': 'categorical', 'domain': (0,1,2,3,4),'dimensionality': 1}]
 
         return hyp_   
         
