@@ -119,9 +119,8 @@ class AutoPrognosis_Classifier:
     def __init__(
             self,
             CV=5,
-            num_iter=100, # this looks like the total number of iterations for the optimization process
-            kernel_freq=100, # this is the frequency at which the kernel might get updated. If num_iter and this one are both 100, 
-                            # that means the kernel does not update
+            num_iter=100,
+            kernel_freq=10,
             ensemble=True,
             ensemble_size=3, 
             Gibbs_iter=100, # each time the kernel is being updated, something loops this many times!!  #?????????
@@ -147,32 +146,25 @@ class AutoPrognosis_Classifier:
         self.kernel_freq    = kernel_freq 
         self.ensemble_size  = ensemble_size
         self.ensemble       = ensemble
-        #self.num_clusters   = num_clusters #Mojgan
         
         self.model_         = []
         self.models_        = []
         self.scores_        = []
         
-        self.my_model_indexes= my_model_indexes #Mojgan
+        self.my_model_indexes= my_model_indexes 
         self.model_names_original    = ['Random Forest', 'Gradient Boosting', 'XGBoost', 'Adaboost', 'Bagging', 'Bernoulli Naive Bayes',
                                'Gauss Naive Bayes', 'Multinomial Naive Bayes', 'Logistic Regression','Perceptron',
                                'Decision Trees','QDA','LDA','KNN','Linear SVM', 'Neural Network'] 
 
-        self.model_names    = [self.model_names_original[i] for i in self.my_model_indexes] #Mojgan
+        self.model_names    = [self.model_names_original[i] for i in self.my_model_indexes] 
         
         
         self.initialize_hyperparameter_map()
         self.name = 'autoprognosis_clf'
         self.exe_start_time = time.time()
         
-    def initialize_hyperparameter_map_original(self):
-        self.modind         = [0,1,2,3,4,5,7,8,9,10,13,14,15] # indexes of models with hyperparam
-        self.noHyp          = [6,11,12]                       # indexes of models without hyperparam
-        self.hypMAP         = [[1,2],[3,4,5],[6,7,8],[9,10],[11,12,13,14],[15],[],[16],
-                               [17,18,19],[20,21],[22],[],[],[23,24,25,26],[27],[28,29,30,31]]
-
     def initialize_hyperparameter_map(self): 
-        self.model_parameter_number= [2,3,3,2,4,1,0,1,3,2,1,0,0,4,1,4] #Mojgan : this is for all 16 models.
+        self.model_parameter_number= [2,3,3,2,4,1,0,1,3,2,1,0,0,4,1,4] # this is for all 16 models.
         #modind and noHyp and hupMAP will work with internal indexes, that is 0 to 4, if only 4 classifies are to be studied
         #0 to 15 is only used in my_model_indexes, that comes from the user, and is used in the constructor, 
         # and in get_model. We translate mdl_index there before use.
@@ -220,8 +212,8 @@ class AutoPrognosis_Classifier:
 
         select_imp = np.random.randint(
             1 if self.is_nan else 0,
-            len(imputers_)) #Mojgan: was len(imputers_)-1, I changed it
-        select_pre = np.random.randint(0, len(preprocessors_))       #Mojgan: same here  
+            len(imputers_)) 
+        select_pre = np.random.randint(0, len(preprocessors_))       
         
         # Create hyper-parameter dictionary
         #----------------------------------
@@ -387,6 +379,8 @@ class AutoPrognosis_Classifier:
 
         assert 0
         
+        # Define domains for classifier sets
+        
         domain_      = [{'name': 'classifier', 'type': 'categorical', 
                          'domain': tuple(range(0,len(self.my_model_indexes))),'dimensionality': 1}]
         
@@ -411,23 +405,7 @@ class AutoPrognosis_Classifier:
   
     #----------------------
     
-    def load_initial_model_original(self):
-        # [RF 0 (1,2),GBM 1 (3,4,5),XGB 2 (6,7,8),Ada 3 (9,10),Bag 4 (11,12,13,14), BNB 5 (15), 
-        # GNB 6 [], MNB 7 (16), LR 8 (17,18,19), Perc 9 (20,21), DT 10 (22), QDA_ 11 (),
-        # LDA_ 12 (), KNN 13 (23,24,25,26), LSVM 14 (27), NN 15 (28,29,30,31)]
-        
-        init_assigns = [[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],
-                        [0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],
-                        [0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],
-                        [0,1,0],[0,1,0],[0,1,0],[0,1,0]]
-        
-        X_inits      = [np.array([[1,100,6,0.1,100,6,0.1,100,0,2,100,0,0]]),
-                        np.array([[0,1,1,100,1,1,0,100,1]]),
-                        np.array([[0,1,0,0,0,30,0,1,0,1,0,100]])]
-        
-        return X_inits, init_assigns  
-
-    def load_initial_model(self): #Mojgan: unlike the previous code for this function, init_assigns here is set to initial assign of 
+    def load_initial_model(self): # unlike the previous code for this function, init_assigns here is set to initial assign of 
         # models to clusters, rather than parameters to clusters. internal_clusters_size is the smallest cluster size, and all num_cluster-1 first 
         # clusters will have this size. Then the parameters will be initialized according to this assignment. 
         # For each parameter cluster, the first item is the number of classifiers-1 in that cluster. Then the parameters follow.
@@ -479,6 +457,7 @@ class AutoPrognosis_Classifier:
                 model_type='GP', exact_feval=True,
                 cost_withGradients=None
             ))
+
             x_next.append(bo_steps[-1].suggest_next_locations()[0])
             GP_.append(bo_steps[-1].model.model)
 
@@ -1102,8 +1081,8 @@ def evaluate_ens(X, Y, model_input, n_folds, visualize=False):
     
     logger.info('+evaluate_ens shape x:{} y:{}'.format(X.shape, Y.shape))
     logger.info('nan x:{} {}'.format(
-        sum(np.ravel(pd.isnull(X))), #Mojgan: It was np.isnan, I changed it
-        sum(np.ravel(pd.isnull(X)))/len(np.ravel(X)))) # same here
+        sum(np.ravel(pd.isnull(X))), 
+        sum(np.ravel(pd.isnull(X)))/len(np.ravel(X)))) 
 
     metric_      = np.zeros(n_folds)
     metric_ens   = np.zeros(n_folds)

@@ -18,7 +18,7 @@ def init_arg():
         "-n",
         default=0,
         type=int,
-        help="maximum number of samples") #Mojgan: if other than 0, X_ and Y_ will be truncated at this number !
+        help="maximum number of samples")
     parser.add_argument(
         "--nstage",
         default=1,
@@ -43,17 +43,17 @@ def init_arg():
         "--pmiss",
         default=0,
         type=float,
-        help='missing rate when introducing nans')   #?????????
+        help='missing rate when introducing nans')
     parser.add_argument(
         "--xtr",
         default=0,
         type=int,
-        help="private/adhoc/not supported parameter to" #?????????
+        help="private/adhoc/not supported parameter to"
         " temporally control internal behavior")
-    parser.add_argument("--usegain", default=0, type=int) #?????????
+    parser.add_argument("--usegain", default=0, type=int)
     parser.add_argument(
         "--it",
-        default=100,
+        default=20,
         type=int,
         help='number of iterations') 
     parser.add_argument(
@@ -234,8 +234,8 @@ if __name__ == '__main__':
         num_components=num_components,
         metric=metric,
         isnan=True if utilmlab.df_get_num_na(X_) else False,
-        acquisition_type=acquisition_type,
-        my_model_indexes=my_model_indexes)
+        my_model_indexes=my_model_indexes,
+        acquisition_type=acquisition_type)
 
     if False:
         logger.info('+ap:evaluate_clf')
