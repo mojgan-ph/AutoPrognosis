@@ -85,6 +85,11 @@ def init_arg():
         type=int,
         default=3,
         help="number of components of the kernel structure")
+    parser.add_argument(
+        "--kernel_freq",
+        type=int,
+        default=10,
+        help="Frequency at which the kernel is updated")
     return parser.parse_args()
 
 
@@ -121,6 +126,7 @@ if __name__ == '__main__':
     acquisition_type = args.acquisitiontype
     my_model_indexes= args.modelindexes
     num_components= args.num_components 
+    kernel_freq= args.kernel_freq
 
     sep = args.separator
     verbose = args.verbose
@@ -220,7 +226,7 @@ if __name__ == '__main__':
     AP_mdl = model.AutoPrognosis_Classifier(
         CV=nCV,
         num_iter=niter,
-        kernel_freq=100,
+        kernel_freq=kernel_freq,
         ensemble=is_ensemble,
         ensemble_size=ensemble_size,
         Gibbs_iter=100,

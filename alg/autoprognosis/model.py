@@ -228,6 +228,7 @@ class AutoPrognosis_Classifier:
         nnsolvers = ['lbfgs','sgd','adam']
         nnactiv   = ['identity','logistic','tanh','relu']
         crit_     = ['gini','entropy']
+        max_feature_= ['log2', 'sqrt', 0.5, 0.8, None]
         
         # Unpack model names
         #----------------------------------            
@@ -241,7 +242,9 @@ class AutoPrognosis_Classifier:
         if mdl_index==0:
     
             model = RandomForest(n_estimators=int(x_next[domain_list.index('RandomForest.ntrees')]),
-                                 criterion=crit_[int(x_next[domain_list.index('RandomForest.criterion')])])
+                                 criterion=crit_[int(x_next[domain_list.index('RandomForest.criterion')])],
+                                 min_samples_leaf=int(x_next[domain_list.index('RandomForest.min_samples_leaf')]),
+                                 max_features=max_feature_[int(x_next[domain_list.index('RandomForest.max_features')])])
         
         elif mdl_index==1:
             
