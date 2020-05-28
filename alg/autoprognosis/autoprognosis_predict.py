@@ -11,22 +11,6 @@ import utilmlab
 import logging
 import os
 
-
-from rpy2.robjects import r
-import rpy2.robjects.numpy2ri
-import rpy2.robjects.packages as rpackages
-rpy2.robjects.numpy2ri.activate()
-
-
-def init_r_system():
-    r('require("missForest")')
-    r('require("MICE")')
-    r('require("EMB")')
-    r('require("Amelia")')
-    r('require("matrix_completion")')
-    r('require("softImpute")')
-
-
 def init_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i")

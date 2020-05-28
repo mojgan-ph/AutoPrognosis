@@ -17,11 +17,6 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import Perceptron, LogisticRegression
 
-from rpy2.robjects import r
-import rpy2.robjects.numpy2ri
-import rpy2.robjects.packages as rpackages
-rpy2.robjects.numpy2ri.activate()
-
 import warnings
 warnings.filterwarnings("ignore")
 

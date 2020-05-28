@@ -16,14 +16,8 @@ import scipy
 from sklearn import preprocessing, random_projection
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.feature_selection import SelectKBest, chi2, VarianceThreshold
-#SelectFdr, SelectFpr, SelectFwe, SelectPercentile, SelectFromModel
 from sklearn.decomposition import PCA
 from sklearn.cluster import FeatureAgglomeration
-
-from rpy2.robjects import r
-import rpy2.robjects.numpy2ri
-import rpy2.robjects.packages as rpackages
-rpy2.robjects.numpy2ri.activate()
 
 import warnings
 warnings.filterwarnings("ignore")

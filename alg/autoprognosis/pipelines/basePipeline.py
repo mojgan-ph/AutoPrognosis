@@ -106,7 +106,6 @@ class basePipeline:
         for u in range(self.num_stages):
 
             if hasattr(self.model_list[u], 'fit_transform'): # This should be just a transform
-
                 X_temp = np.array(self.model_list[u].fit_transform(X_temp)).copy()
 
             else:

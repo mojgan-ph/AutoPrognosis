@@ -10,8 +10,7 @@ import logging
 import copy
 import time
 from tqdm import tnrange
-from models.imputers import missForest, matrix_completion, mean, median
-from models.imputers import most_frequent
+from models.imputers import mean, median, most_frequent
 from models.classifiers import RandomForest, RandomForestClassifier
 from models.classifiers import GradientBoosting, GradientBoostingClassifier
 from models.classifiers import XGboost, Adaboost, Bagging, BernNaiveBayes
@@ -126,7 +125,7 @@ class AutoPrognosis_Classifier:
             Gibbs_iter=100, # each time the kernel is being updated, something loops this many times!!  #?????????
             burn_in=50, # Maybe it is the maximum number of parameters in a cluster(or component)
             num_components=3, # looks like it is the number of clusters that are optimised independently
-            is_nan=False, 
+            is_nan=True, 
             metric='aucroc',
             acquisition_type='LCB',
             my_model_indexes= [0,1,2,3,15], # using this the user can select the classifiers that they are interested in trying
@@ -187,7 +186,6 @@ class AutoPrognosis_Classifier:
         
         imputers_ = [
             [],
-            [missForest()],
             [mean()],
             [median()],
             [most_frequent()]
@@ -202,7 +200,7 @@ class AutoPrognosis_Classifier:
 
         if get_xtr_arg() < 1:
 
-            imputers_.append([matrix_completion()])
+            #imputers_.append([matrix_completion()])
             
             # WA: bagging with base estimator cannot handle negative values
             preprocessors_.append([Scaler()])
