@@ -8,6 +8,12 @@ import numpy as np
 
 from sklearn import preprocessing
 from sklearn.impute import SimpleImputer
+from sklearn.experimental import enable_iterative_imputer  
+from sklearn.impute import IterativeImputer
+from sklearn.linear_model import BayesianRidge
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.neighbors import KNeighborsRegressor
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -43,16 +49,18 @@ class baseImputer:
         :_hyperparameters: hyper-parameter setting for the imputer 
         
         """ 
-        self._model_list       = ['mean', 'median', 'most_frequent']
+        self._model_list       = ['mean', 'median', 'most_frequent', 'iterative_k_neighbors', 'iterative_extra_trees', 
+                                    'iterative_decision_tree', 'iterative_bayesian_ridge']
         self._hyperparameters  = {} 
         self._mode             = 'mean' 
         self.MI                = False   
+        self.est               = None
         self.kwargs            = kwargs
 
         self.is_init_r_system = False
         
         # Set defaults and catch exceptions
-        self.__acceptable_keys_list = ['_mode', '_hyperparameters']
+        self.__acceptable_keys_list = ['_mode', '_hyperparameters', 'est']
         
         try:
             if(len(kwargs) > 0):
@@ -79,14 +87,18 @@ class baseImputer:
         """
         Creates an imputation model object and assigns it to the "model" attribute.
         """
-        self.model   = SimpleImputer(strategy=self._mode)
+        if (self._mode in ['mean', 'median', 'most_frequent']):
+            self.model   = SimpleImputer(strategy=self._mode)
+        else:
+            self.model = IterativeImputer(estimator= self.est)
                    
     
     def set_hyperparameters(self):
         """
         Set the imputation model hyper-parameters.
         """  
-        hyper_dict   = {'mean': [], 'median': [], 'most_frequent': []}
+        hyper_dict   = {'mean': [], 'median': [], 'most_frequent': [], 'iterative_k_neighbors':[],
+                     'iterative_extra_trees': [], 'iterative_decision_tree': [], 'iterative_bayesian_ridge':[]}
         
         _hyp__input  = (self.kwargs.__contains__('_hyperparameters')) # Hyperparameters input FLAG
         
@@ -118,7 +130,8 @@ class baseImputer:
             
         # set defaults if no input provided
         
-        if self._mode in ['mean','median','most_frequent']:
+        if self._mode in ['mean','median','most_frequent', 'iterative_k_neighbors', 'iterative_extra_trees', 
+                        'iterative_decision_tree', 'iterative_bayesian_ridge']:
             self._hyperparameters  = {}
             
         elif missing_flg:
@@ -211,3 +224,86 @@ class most_frequent:
         
         return hyp_         
 
+class iterative_bayesian_ridge:
+    """ iterative imputation algorithm using bayesian ridge estimator."""
+    
+    def __init__(self): 
+        
+        self.model_type    = 'imputer'
+        self.name          = 'iterative_bayesian_ridge'
+        self.MI            = False
+        self.estimator     = BayesianRidge()
+        self.model         = baseImputer(_mode=self.name, est=self.estimator)
+        
+    def fit_transform(self, X):
+        
+        return self.model.fit(X)
+        
+    def get_hyperparameter_space(self):
+            
+        hyp_               = []
+        
+        return hyp_         
+
+class iterative_decision_tree:
+    """ iterative imputation algorithm using decision tree estimator."""
+    
+    def __init__(self): 
+        
+        self.model_type    = 'imputer'
+        self.name          = 'iterative_decision_tree'
+        self.MI            = False
+        self.estimator     = DecisionTreeRegressor(max_features='sqrt', random_state=0)
+        self.model         = baseImputer(_mode=self.name, est=self.estimator)
+        
+    def fit_transform(self, X):
+        
+        return self.model.fit(X)
+        
+    def get_hyperparameter_space(self):
+            
+        hyp_               = []
+        
+        return hyp_         
+
+class iterative_extra_trees:
+    """ iterative imputation algorithm using extra trees estimator."""
+    
+    def __init__(self): 
+        
+        self.model_type    = 'imputer'
+        self.name          = 'iterative_extra_trees'
+        self.MI            = False
+        self.estimator     = ExtraTreesRegressor(n_estimators=10, random_state=0)
+        self.model         = baseImputer(_mode=self.name, est=self.estimator)
+        
+    def fit_transform(self, X):
+        
+        return self.model.fit(X)
+        
+    def get_hyperparameter_space(self):
+            
+        hyp_               = []
+        
+        return hyp_         
+
+class iterative_k_neighbors:
+    """ iterative imputation algorithm using k-neighbors estimator."""
+    
+    def __init__(self): 
+        
+        self.model_type    = 'imputer'
+        self.name          = 'iterative_k_neighbors'
+        self.MI            = False
+        self.estimator     = KNeighborsRegressor(n_neighbors=15)
+        self.model         = baseImputer(_mode=self.name, est=self.estimator)
+        
+    def fit_transform(self, X):
+        
+        return self.model.fit(X)
+        
+    def get_hyperparameter_space(self):
+            
+        hyp_               = []
+        
+        return hyp_         

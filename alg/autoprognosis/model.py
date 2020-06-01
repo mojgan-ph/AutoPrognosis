@@ -10,7 +10,7 @@ import logging
 import copy
 import time
 from tqdm import tnrange
-from models.imputers import mean, median, most_frequent
+from models.imputers import mean, median, most_frequent, iterative_bayesian_ridge, iterative_decision_tree, iterative_extra_trees, iterative_k_neighbors
 from models.classifiers import RandomForest, RandomForestClassifier
 from models.classifiers import GradientBoosting, GradientBoostingClassifier
 from models.classifiers import XGboost, Adaboost, Bagging, BernNaiveBayes
@@ -188,7 +188,11 @@ class AutoPrognosis_Classifier:
             [],
             [mean()],
             [median()],
-            [most_frequent()]
+            [most_frequent()], 
+            [iterative_bayesian_ridge()],
+            [iterative_decision_tree()],
+            [iterative_extra_trees()],
+            [iterative_k_neighbors()]
         ]
         
         preprocessors_= [
@@ -322,13 +326,21 @@ class AutoPrognosis_Classifier:
         
         model_list_base = imputers_[select_imp] + preprocessors_[select_pre] + [model]
 
-        if nmax_model:
-            model_list = model_list_base[-nmax_model:]
-        else:
-            # auto
+        if (nmax_model==4):
             model_list = list()
             if self.is_nan:
                 model_list.append(model_list_base[0]) # add imputer
+            model_list.append(model_list_base[-1]) # add clf
+        elif nmax_model: 
+            # 1, 2, or 3
+            model_list = model_list_base[-nmax_model:]
+        else:
+            # 0 which is auto
+            model_list = list()
+            if self.is_nan:
+                model_list.append(model_list_base[0]) # add imputer
+            if (mdl_index not in [0,1,2,10]):
+                model_list.append(model_list_base[1]) # add preprocessor
             model_list.append(model_list_base[-1]) # add clf
             
         model = basePipeline(model_list=model_list)

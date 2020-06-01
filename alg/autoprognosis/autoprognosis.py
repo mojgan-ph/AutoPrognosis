@@ -27,7 +27,8 @@ def init_arg():
         "size of pipeline: 0: auto (selects imputation when missing data is detected)"
         "1: only classifiers, "
         "2: feature processesing + clf, "
-        "3: imputers + feature processors and clf")
+        "3: imputers + feature processors and clf, "
+        "4: imputers + clf")
     parser.add_argument("--dataset")
     parser.add_argument("-i", help='input data in csv format')
     parser.add_argument(
@@ -233,7 +234,7 @@ if __name__ == '__main__':
         burn_in=50,
         num_components=num_components,
         metric=metric,
-        isnan=True if utilmlab.df_get_num_na(X_) else False,
+        is_nan=True if utilmlab.df_get_num_na(X_) else False,
         my_model_indexes=my_model_indexes,
         acquisition_type=acquisition_type)
 
