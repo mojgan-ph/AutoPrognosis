@@ -6,7 +6,6 @@ seaborn
 # scikit-survival
 xgboost
 IPython
-rpy2
 tzlocal
 lifelines
 gpyopt
