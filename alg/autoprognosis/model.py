@@ -173,7 +173,8 @@ class AutoPrognosis_Classifier:
         self.noHyp=[]
         self.hypMAP=[]
         for i in self.my_model_indexes:
-            if True: #self.model_parameter_number[i]>0: #todo:
+            if True: #self.model_parameter_number[i]>0: noHyp can now be removed, as I am adding all the models to modind. 
+                #Those with no parameter will have an empty list in hypMap
                 self.modind.append(model_count)
                 self.hypMAP.append(list(range(param_count, param_count+self.model_parameter_number[i])))
                 param_count+=self.model_parameter_number[i]
