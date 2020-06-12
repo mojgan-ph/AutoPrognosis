@@ -74,9 +74,9 @@ def generate_report(
     clf_hyper_d = defaultdict(list)
     for el in lst:
         ky = 'hyperparameter_properties'
+        model_par = str()
         if ky in el[1].keys():
             hyper_par = el[1][ky]
-            model_par = str()
             for el1 in hyper_par:
                 ky1 = 'hyperparameters'
                 if ky1 in el1.keys():
@@ -87,6 +87,8 @@ def generate_report(
             if not verbose:
                 # if not verbose group performance clf by name not by parameters
                 model_par = el1['name']
+        else:
+            model_par += el[1]['name']
         clf_hyper_d[model_par].append(el)
 
     logger.info('# {}'.format(len(clf_hyper_d.keys())))
