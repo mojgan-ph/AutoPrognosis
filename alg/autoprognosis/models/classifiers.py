@@ -172,17 +172,30 @@ class XGboost(baseClassifier):
     def __init__(self,
                  n_estimators=100,
                  learning_rate=0.1,
-                 max_depth=6):
+                 max_depth=6,
+                 min_child_weight=1,
+                 gamma= 0,
+                 subsample=1,
+                 colsample_bytree=1):
         
         super().__init__()
    
         self.n_estimators  = n_estimators
         self.learning_rate = learning_rate
         self.max_depth     = max_depth
+        self.min_child_weight= min_child_weight
+        self.gamma         = gamma
+        self.subsample     = subsample
+        self.colsample_bytree= colsample_bytree
         self.name          = 'XGBoost'
         self.is_pred_proba = True
         self.model         = XGBClassifier(n_estimators=self.n_estimators,
-                                           learning_rate=self.learning_rate,max_depth=self.max_depth)
+                                           learning_rate=self.learning_rate,
+                                           max_depth=self.max_depth,
+                                           min_child_weight= self.min_child_weight,
+                                           gamma= self.gamma,
+                                           subsample= self.subsample,
+                                           colsample_bytree= self.colsample_bytree)
         
         self.explained     = "*GBoost is an open-source software library which provides the gradient boosting framework for C++, Java, Python, R, and Julia.*"
         self.image_name    = "XGBoost.png"
@@ -198,7 +211,11 @@ class XGboost(baseClassifier):
         
         hyp_ = [{'name': 'XGboost.n_estimators', 'type': 'discrete', 'domain': (10, 15, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500),'dimensionality': 1},
                 {'name': 'XGboost.max_depth', 'type': 'discrete', 'domain': tuple(range(1,10)),'dimensionality': 1},
-                {'name': 'XGboost.learning_rate', 'type': 'continuous', 'domain': (0.005,0.5),'dimensionality': 1}]
+                {'name': 'XGboost.min_child_weight', 'type': 'continuous', 'domain': (0.5,2),'dimensionality': 1},
+                {'name': 'XGboost.learning_rate', 'type': 'continuous', 'domain': (0.005,0.5),'dimensionality': 1},
+                {'name': 'XGboost.gamma', 'type': 'continuous', 'domain': (0,10),'dimensionality': 1},
+                {'name': 'XGboost.subsample', 'type': 'continuous', 'domain': (0.5,1),'dimensionality': 1},
+                {'name': 'XGboost.colsample_bytree', 'type': 'continuous', 'domain': (0.5,1),'dimensionality': 1}]
         return hyp_   
         
     def get_properties(self):

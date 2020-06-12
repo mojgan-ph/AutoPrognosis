@@ -163,7 +163,7 @@ class AutoPrognosis_Classifier:
         self.exe_start_time = time.time()
         
     def initialize_hyperparameter_map(self): 
-        self.model_parameter_number= [2,3,3,2,4,1,0,1,3,2,1,0,0,4,1,4] # this is for all 16 models.
+        self.model_parameter_number= [4,3,7,2,4,1,0,1,3,2,1,0,0,4,1,4] # this is for all 16 models.
         #modind and noHyp and hupMAP will work with internal indexes, that is 0 to 4, if only 4 classifies are to be studied
         #0 to 15 is only used in my_model_indexes, that comes from the user, and is used in the constructor, 
         # and in get_model. We translate mdl_index there before use.
@@ -173,7 +173,7 @@ class AutoPrognosis_Classifier:
         self.noHyp=[]
         self.hypMAP=[]
         for i in self.my_model_indexes:
-            if self.model_parameter_number[i]>0:
+            if True: #self.model_parameter_number[i]>0: #todo:
                 self.modind.append(model_count)
                 self.hypMAP.append(list(range(param_count, param_count+self.model_parameter_number[i])))
                 param_count+=self.model_parameter_number[i]
@@ -257,7 +257,11 @@ class AutoPrognosis_Classifier:
             
             model = XGboost(n_estimators=int(x_next[domain_list.index('XGboost.n_estimators')]),       
                             learning_rate=x_next[domain_list.index('XGboost.learning_rate')],
-                            max_depth=int(x_next[domain_list.index('XGboost.max_depth')]))
+                            max_depth=int(x_next[domain_list.index('XGboost.max_depth')]),
+                            min_child_weight= x_next[domain_list.index('XGboost.min_child_weight')],
+                            gamma= x_next[domain_list.index('XGboost.gamma')],
+                            subsample= x_next[domain_list.index('XGboost.subsample')],
+                            colsample_bytree= x_next[domain_list.index('XGboost.colsample_bytree')])
             
         elif mdl_index==3:
             
