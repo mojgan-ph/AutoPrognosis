@@ -31,6 +31,7 @@ def init_arg():
         "4: imputers + clf")
     parser.add_argument("--dataset")
     parser.add_argument("-i", help='input data in csv format')
+    parser.add_argument("-iValIndex", help='If validation set is given')
     parser.add_argument(
         "--target",
         help='name of response var when using csv as input')
@@ -154,6 +155,7 @@ if __name__ == '__main__':
     nmax_model = args.nstage
     model.nmax_model = nmax_model
     fn_i = args.i
+    fn_i_val_index= args.iValIndex
     label = args.target
     p_miss = args.pmiss
 
@@ -183,6 +185,11 @@ if __name__ == '__main__':
         assert len(features) > 1
         X_ = df[features]
         Y_ = df[label]
+        if fn_i_val_index is not None:
+            X_val_indexes_= pd.read_csv(fn_i_val_index, sep=sep)
+            X_val_indexes_= X_val_indexes_['eid']
+        else:
+            X_val_indexes_=[]
 
     if p_miss:
         X_ = pd.DataFrame(
@@ -236,14 +243,16 @@ if __name__ == '__main__':
         metric=metric,
         is_nan=True if utilmlab.df_get_num_na(X_) else False,
         my_model_indexes=my_model_indexes,
-        acquisition_type=acquisition_type)
+        acquisition_type=acquisition_type, 
+        X_val_indexes= X_val_indexes_)
 
     if False:
         logger.info('+ap:evaluate_clf')
         Output, d = model.evaluate_clf(
             X_,
             Y_,
-            AP_mdl,
+            AP_mdl, 
+            X_val_indexes_,
             n_folds=nCV,
             visualize=True)
         logger.info('-ap:evaluate_clf')
@@ -268,7 +277,8 @@ if __name__ == '__main__':
         = model.evaluate_ens(
             X_,
             Y_,
-            AP_mdl,
+            AP_mdl, 
+            X_val_indexes_,
             n_folds=nCV,
             visualize=False)
 

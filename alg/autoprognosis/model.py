@@ -129,6 +129,7 @@ class AutoPrognosis_Classifier:
             metric='aucroc',
             acquisition_type='LCB',
             my_model_indexes= [0,1,2,3,15], # using this the user can select the classifiers that they are interested in trying
+            X_val_indexes=[],
             **kwargs):
 
         eva.set_metric(metric)
@@ -138,6 +139,7 @@ class AutoPrognosis_Classifier:
         self.num_iter       = num_iter
         self.x_opt          = 0
         self.CV             = CV
+        self.X_val_indexes  = X_val_indexes
         
         self.Gibbs_iter     = Gibbs_iter
         self.burn_in        = burn_in
@@ -407,13 +409,14 @@ class AutoPrognosis_Classifier:
         return domain_, dim_
     
     
-    def evaluate_CV_objective(self, X_in, Y_in, modraw_):
+    def evaluate_CV_objective(self, X_in, Y_in, modraw_, X_original=None, Y_original=None):
         
         mod_back = modraw_
 
         #mod_back.fit(X_in, Y_in)
 
-        rval_eva = evaluate_clf(X_in.copy(), Y_in.copy(), copy.deepcopy(modraw_), n_folds = self.CV)
+        rval_eva = evaluate_clf(X_in.copy(), Y_in.copy(), copy.deepcopy(modraw_),  self.X_val_indexes, n_folds = self.CV, X_original=X_original
+                        , Y_original= Y_original)
         logger.info('CV_objective:{}'.format(rval_eva))
         f = -1*rval_eva[0][0]
         return f, mod_back, rval_eva[1]
@@ -504,7 +507,7 @@ class AutoPrognosis_Classifier:
         
         return x_next, GP_
     
-    def fit(self, X, Y):
+    def fit(self, X, Y, X_original=None, Y_original=None):
 
         # -------------------------------------------
         # Initial decomposition and hyper-parameters
@@ -517,7 +520,7 @@ class AutoPrognosis_Classifier:
         # Obtain initial BO objective
         # -------------------------------------------
         Y_inits      = [np.array([self.evaluate_CV_objective(X.copy(), Y.copy(), self.get_model(
-                                                                domains_[k],k,self.compons_,X_inits[k][0]))[0]]).reshape((1,1)) for k in range(len(X_inits))] 
+                                                                domains_[k],k,self.compons_,X_inits[k][0]), X_original, Y_original)[0]]).reshape((1,1)) for k in range(len(X_inits))] 
         
         X_step       = X_inits
         Y_step       = Y_inits
@@ -546,7 +549,7 @@ class AutoPrognosis_Classifier:
                 self.models_.append(self.get_model(self.domains_[u],u,self.compons_,x_next[u]))
                 rval_model = self.get_model(self.domains_[u],u,self.compons_,x_next[u])
 
-                y_next_, modb_, eva_prp = self.evaluate_CV_objective(X.copy(), Y.copy(), rval_model)
+                y_next_, modb_, eva_prp = self.evaluate_CV_objective(X.copy(), Y.copy(), rval_model, X_original=X_original, Y_original=Y_original)
 
                 eva_prp['iter'] = current_iter
                 eva_prp['component_idx'] = u
@@ -993,11 +996,10 @@ def get_ensemble_constraints(ens_size):
     return ens_constraints
     
 
-def evaluate_clf(X, Y, model_input, n_folds, visualize=False):
+def evaluate_clf(X, Y, model_input, X_val_indexes, n_folds, visualize=False, X_original=None, Y_original=None):
 
-    metric_      = np.zeros(n_folds)
+    metric_      = np.zeros(max(n_folds, 1))
     indx         = 0
-    skf          = StratifiedKFold(n_splits=n_folds)
     
     score_roc_lst = list()
     score_prc_lst = list()
@@ -1007,7 +1009,15 @@ def evaluate_clf(X, Y, model_input, n_folds, visualize=False):
     if hasattr(model_input, 'get_is_pred_proba'):
         is_pred_proba = model_input.get_is_pred_proba()
 
-    for train_index, test_index in skf.split(X, Y):
+    if(n_folds==0):
+        X= X_original
+        Y=Y_original
+        train_eids= np.setdiff1d(X['eid'], X_val_indexes)
+        datasets= [(X[X['eid'].isin(train_eids)].index, X[X['eid'].isin(X_val_indexes)].index)]
+    else:
+        skf = StratifiedKFold(n_splits=n_folds)
+        datasets= skf.split(X, Y)
+    for train_index, test_index in datasets:
 
         X_train  = X.loc[X.index[train_index]].copy()
         Y_train  = Y.loc[Y.index[train_index]].copy()
@@ -1092,17 +1102,16 @@ def evaluate_clf(X, Y, model_input, n_folds, visualize=False):
     return Output, eva_prop
 
 
-def evaluate_ens(X, Y, model_input, n_folds, visualize=False):
+def evaluate_ens(X, Y, model_input, X_val_indexes, n_folds, visualize=False):
     
     logger.info('+evaluate_ens shape x:{} y:{}'.format(X.shape, Y.shape))
     logger.info('nan x:{} {}'.format(
         sum(np.ravel(pd.isnull(X))), 
         sum(np.ravel(pd.isnull(X)))/len(np.ravel(X)))) 
 
-    metric_      = np.zeros(n_folds)
-    metric_ens   = np.zeros(n_folds)
+    metric_      = np.zeros(max(n_folds, 1))
+    metric_ens   = np.zeros(max(n_folds, 1))
     indx         = 0
-    skf          = StratifiedKFold(n_splits=n_folds)
     start_fold   = 0
 
     score_d = dict()
@@ -1114,8 +1123,16 @@ def evaluate_ens(X, Y, model_input, n_folds, visualize=False):
     score_d['clf']['prc_lst'] = list()
     score_d['clf_ens']['prc_lst'] = list()
     eva_prop_lst = []
-    for train_index, test_index in skf.split(X, Y):
 
+
+    if(n_folds==0):
+        train_eids= np.setdiff1d(X['eid'], X_val_indexes)
+        datasets= [(X[X['eid'].isin(train_eids)].index, X[X['eid'].isin(X_val_indexes)].index)]
+    else:
+        skf = StratifiedKFold(n_splits=n_folds)
+        datasets= skf.split(X, Y)
+
+    for train_index, test_index in datasets:
         X_train  = X.loc[X.index[train_index]]
         Y_train  = Y.loc[Y.index[train_index]]
         X_test   = X.loc[X.index[test_index]]
@@ -1125,7 +1142,7 @@ def evaluate_ens(X, Y, model_input, n_folds, visualize=False):
 
             model = copy.deepcopy(model_input)  # start with the initial model
 
-            eva_prop = model.fit(X_train, Y_train)
+            eva_prop = model.fit(X_train, Y_train, X, Y)
             eva_prop_lst.append(eva_prop)
 
             preds             = model.predict(X_test)[0]
